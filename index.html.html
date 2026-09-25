@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>钢琴教学：触键角度与音色 | 交互式动画讲解</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none; /* 避免拖动干扰 */
+        }
+
+        body {
+            background: linear-gradient(145deg, #1a2a3a 0%, #0f1a24 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Segoe UI', 'Poppins', 'Roboto', 'Noto Sans', system-ui, -apple-system, sans-serif;
+            padding: 20px;
+        }
+
+        /* 主卡片容器 */
+        .master-container {
+            max-width: 1300px;
+            width: 100%;
+            background: rgba(30, 35, 48, 0.65);
+            backdrop-filter: blur(2px);
+            border-radius: 56px;
+            padding: 24px 28px 32px 28px;
+            box-shadow: 0 25px 45px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        /* 两栏布局 */
+        .content-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 28px;
+            justify-content: center;
+        }
+
+        /* 左侧: 钢琴 + 手指动画区 */
+        .piano-stage {
+            flex: 2;
+            min-width: 620px;
+            background: #1e1e2c;
+            border-radius: 44px;
+            padding: 20px 18px 18px 18px;
+            box-shadow: inset 0 1px 4px rgba(0,0,0,0.5), 0 12px 24px rgba(0,0,0,0.3);
+            backdrop-filter: blur(4px);
+            background: rgba(20, 22, 32, 0.8);
+        }
+
+        .canvas-area {
+            text-align: center;
+            position: relative;
+        }
+
+        canvas#pianoCanvas {
+            background: #fef7e8;
+            border-radius: 28px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4), inset 0 0 0 2px rgba(255,245,215,0.8);
+            width: 100%;
+            height: auto;
+            cursor: pointer;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .angle-control-panel {
+            margin-top: 24px;
+            background: rgba(0,0,0,0.4);
+            border-radius: 60px;
+            padding: 12px 22px;
+            backdrop-filter: blur(8px);
+        }
+
+        .slider-label {
+            display: flex;
+            justify-content: space-between;
+            color: #ffecb3;
+            font-weight: 600;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+        }
+
+        input#angleSlider {
+            width: 100%;
+            height: 6px;
+            -webkit-appearance: none;
+            background: linear-gradient(90deg, #3b8c9e, #f5c542);
+            border-radius: 10px;
+            outline: none;
+        }
+
+        input#angleSlider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 22px;
+            height: 22px;
+            background: #ffdd99;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 8px #ffb347;
+            border: 2px solid white;
+        }
+
+        .angle-value {
+            background: #000000aa;
+            display: inline-block;
+            padding: 4px 16px;
+            border-radius: 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd966;
+        }
+
+        /* 右侧: 讲解 + 音色视觉 */
+        .explanation-area {
+            flex: 1.2;
+            min-width: 280px;
+            background: rgba(0,0,0,0.45);
+            backdrop-filter: blur(8px);
+            border-radius: 44px;
+            padding: 22px 20px;
+            border: 1px solid rgba(255,215,150,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .lecture-card {
+            background: #2a2a32c9;
+            border-radius: 32px;
+            padding: 18px 20px;
+            border-left: 6px solid #f3b33d;
+        }
+
+        .lecture-card h2 {
+            color: #fad974;
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .lecture-card p {
+            color: #f0eee9;
+            line-height: 1.5;
+            font-size: 1rem;
+        }
+
+        .timbre-viz {
+            background: #15161ec9;
+            border-radius: 32px;
+            padding: 18px;
+        }
+
+        .timbre-title {
+            color: #ffd966;
+            font-weight: bold;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        #harmonicBars {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            height: 130px;
+            gap: 12px;
+            margin: 15px 0;
+        }
+
+        .bar {
+            flex: 1;
+            background: #7fc9ff;
+            background: linear-gradient(0deg, #3b82f6, #a5f0ff);
+            border-radius: 12px 12px 6px 6px;
+            transition: height 0.2s ease;
+            box-shadow: 0 -2px 8px rgba(0,255,255,0.3);
+        }
+
+        .bar-label {
+            text-align: center;
+            color: #ddd;
+            font-size: 0.75rem;
+            margin-top: 8px;
+        }
+
+        .play-demo-btn {
+            background: linear-gradient(135deg, #ffae5a, #ff7e33);
+            border: none;
+            color: white;
+            font-weight: bold;
+            font-size: 1.2rem;
+            padding: 14px 0;
+            border-radius: 60px;
+            cursor: pointer;
+            transition: 0.2s;
+            font-family: inherit;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 8px 18px rgba(0,0,0,0.3);
+            margin-top: 10px;
+        }
+
+        .play-demo-btn:active {
+            transform: scale(0.97);
+        }
+
+        .note-tip {
+            font-size: 0.85rem;
+            color: #b9d8ff;
+            text-align: center;
+            background: #00000055;
+            border-radius: 28px;
+            padding: 8px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 22px;
+            color: #7f8c8d;
+            font-size: 0.75rem;
+        }
+
+        @media (max-width: 960px) {
+            .piano-stage { min-width: 480px; }
+            .master-container { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="master-container">
+    <div class="content-grid">
+        <!-- 左侧钢琴舞台 -->
+        <div class="piano-stage">
+            <div class="canvas-area">
+                <canvas id="pianoCanvas" width="800" height="280" style="width:100%; height:auto; max-width:800px; aspect-ratio:800/280"></canvas>
+            </div>
+            <div class="angle-control-panel">
+                <div class="slider-label">
+                    <span>🎹 触键角度调节</span>
+                    <span class="angle-value" id="angleValueDisplay">70°</span>
+                </div>
+                <input type="range" id="angleSlider" min="20" max="90" value="70" step="1">
+                <div style="display: flex; justify-content: space-between; margin-top: 8px; color:#c0cfde;">
+                    <span>✨ 柔和 · 水平触键</span>
+                    <span>🔥 明亮 · 垂直触键</span>
+                </div>
+            </div>
+            <div class="note-tip">
+                💡 点击任意钢琴键 → 实时听到不同触键角度下的音色变化<br>
+                🎯 右侧谐波柱状图随角度改变，角度越大，高频谐波越丰富！
+            </div>
+        </div>
+
+        <!-- 右侧讲解区 -->
+        <div class="explanation-area">
+            <div class="lecture-card">
+                <h2>🎼 触键角度 · 音色密码</h2>
+                <p>✔ <strong>大角度（接近90°）</strong> → 指尖集中、击弦速度快 → 激发更多高频泛音 → <strong style="color:#ffbc6e;">音色明亮、清脆</strong><br>
+                ✔ <strong>小角度（平缓20°~40°）</strong> → 指腹接触面积大、缓冲作用 → 减少高频分量 → <strong style="color:#b0e0ff;">音色柔和、温暖圆润</strong><br>
+                🎓 通过改变触键角度，钢琴家能塑造从“金属感”到“丝绒般”的丰富表情。</p>
+            </div>
+            <div class="timbre-viz">
+                <div class="timbre-title">
+                    🎵 谐波分布 (音色光谱)
+                    <span id="timbreDesc" style="font-size:0.9rem; background:#00000066; padding:4px 12px; border-radius:40px;">明亮型</span>
+                </div>
+                <div id="harmonicBars">
+                    <div class="bar" style="height: 80px;"></div>
+                    <div class="bar" style="height: 60px;"></div>
+                    <div class="bar" style="height: 45px;"></div>
+                    <div class="bar" style="height: 30px;"></div>
+                    <div class="bar" style="height: 18px;"></div>
+                </div>
+                <div style="display: flex; justify-content: space-around; margin-top: 5px;">
+                    <span class="bar-label">基频</span>
+                    <span class="bar-label">2次</span>
+                    <span class="bar-label">3次</span>
+                    <span class="bar-label">4次</span>
+                    <span class="bar-label">5次</span>
+                </div>
+                <button id="playDemoNote" class="play-demo-btn">🎹 播放示范音 (C4) 🎧</button>
+                <div style="font-size:12px; margin-top: 12px; color:#b8d0f0; text-align:center;">
+                    ※ 点击钢琴键或播放按钮，聆听角度对音色的真实影响
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer>⚡ 交互式物理模拟 | 触键角度 → 滤波器截止频率 + 谐波能量变化 | 听觉+视觉双重讲解</footer>
+</div>
+
+<script>
+    (function(){
+        // ---------- 钢琴键盘数据 ----------
+        // 白键音符 (C4 ~ B4)
+        const whiteKeys = [
+            { note: "C4", freq: 261.63, name: "C", x: 0, width: 0 },
+            { note: "D4", freq: 293.66, name: "D", x: 0, width: 0 },
+            { note: "E4", freq: 329.63, name: "E", x: 0, width: 0 },
+            { note: "F4", freq: 349.23, name: "F", x: 0, width: 0 },
+            { note: "G4", freq: 392.00, name: "G", x: 0, width: 0 },
+            { note: "A4", freq: 440.00, name: "A", x: 0, width: 0 },
+            { note: "B4", freq: 493.88, name: "B", x: 0, width: 0 }
+        ];
+        // 黑键 (C#4, D#4, F#4, G#4, A#4)
+        const blackKeys = [
+            { note: "C#4", freq: 277.18, name: "C#", x: 0, width: 0, parentWhiteIndex: 0 },
+            { note: "D#4", freq: 311.13, name: "D#", x: 0, width: 0, parentWhiteIndex: 1 },
+            { note: "F#4", freq: 369.99, name: "F#", x: 0, width: 0, parentWhiteIndex: 3 },
+            { note: "G#4", freq: 415.30, name: "G#", x: 0, width: 0, parentWhiteIndex: 4 },
+            { note: "A#4", freq: 466.16, name: "A#", x: 0, width: 0, parentWhiteIndex: 5 }
+        ];
+
+        const canvas = document.getElementById('pianoCanvas');
+        const ctx = canvas.getContext('2d');
+        let canvasWidth = 800, canvasHeight = 280;
+        canvas.width = canvasWidth;
+        canvas.height = canvasHeight;
+
+        // 白键布局
+        const whiteKeyWidth = canvasWidth / whiteKeys.length;   // 约 114.28
+        for(let i=0; i<whiteKeys.length; i++){
+            whiteKeys[i].x = i * whiteKeyWidth;
+            whiteKeys[i].width = whiteKeyWidth;
+        }
+        // 黑键尺寸: 宽为白键宽度的0.6倍，高度为白键高度的0.6倍左右
+        const blackKeyWidth = whiteKeyWidth * 0.62;
+        const blackKeyHeight = canvasHeight * 0.58;
+        const whiteKeyHeight = canvasHeight;
+        for(let bk of blackKeys){
+            let parentWhite = whiteKeys[bk.parentWhiteIndex];
+            let offsetX = parentWhite.x + whiteKeyWidth - blackKeyWidth/1.8;
+            bk.x = offsetX;
+            bk.width = blackKeyWidth;
+        }
+
+        // ---------- 音频引擎 (Web Audio) ----------
+        let audioCtx = null;
+        let isAudioReady = false;
+        
+        function initAudio() {
+            if(audioCtx) return audioCtx;
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            return audioCtx;
+        }
+
+        // 根据触键角度(20~90) 获得滤波器频率 (映射: 20°-> 700Hz 柔和, 90°-> 4500Hz 明亮)
+        function getFilterFreqFromAngle(angle){
+            // 角度越大越亮，频率越高
+            const minFreq = 650;   // 温暖暗色
+            const maxFreq = 4800;  // 明亮金属感
+            const t = (angle - 20) / 70;  // 20->0, 90->1
+            return minFreq + t * (maxFreq - minFreq);
+        }
+
+        // 播放音符 (频率, 当前角度)
+        let currentSource = null;
+        function playNoteWithAngle(frequency, angleDeg) {
+            if(!audioCtx) {
+                initAudio();
+            }
+            // 确保音频上下文激活 (用户点击时自动激活)
+            if(audioCtx.state === 'suspended') {
+                audioCtx.resume().then(() => {
+                    actuallyPlay(frequency, angleDeg);
+                }).catch(e=>console.log);
+            } else {
+                actuallyPlay(frequency, angleDeg);
+            }
+        }
+
+        function actuallyPlay(frequency, angleDeg) {
+            if(!audioCtx) return;
+            // 停止先前可能重叠的声音，避免混乱 (可允许短重叠，但为了干净停止上一个)
+            if(currentSource) {
+                try { currentSource.stop(); } catch(e) {}
+            }
+            const now = audioCtx.currentTime;
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            const filter = audioCtx.createBiquadFilter();
+            filter.type = "lowpass";
+            const cutoff = getFilterFreqFromAngle(angleDeg);
+            filter.frequency.value = cutoff;
+            filter.Q.value = 2.5;  // 适度共振增强特性区别
+            
+            osc.type = "triangle";  // 柔和的三角波为基础，类似钢琴基音，配合滤波器变化明显
+            osc.frequency.value = frequency;
+            
+            // 包络: 模仿钢琴音头稍快衰减
+            gainNode.gain.setValueAtTime(0.0001, now);
+            gainNode.gain.exponentialRampToValueAtTime(0.55, now + 0.02);
+            gainNode.gain.exponentialRampToValueAtTime(0.25, now + 0.25);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+            
+            osc.connect(filter);
+            filter.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            osc.start();
+            osc.stop(now + 1.3);
+            currentSource = osc;
+            
+            // 播放时视觉反馈：按下动画（结合在canvas绘图实现）
+            triggerKeyVisualFeedback(); // 通用视觉反馈（在canvas增加闪光）
+        }
+
+        // 点击钢琴键时触发，接收频率 + 当前角度
+        let currentAngle = 70;  // 默认
+
+        // ---------- 绘制钢琴键盘 + 手指模型 (角度可视化) ----------
+        // 手指位置基于C4 (第一个白键) 的上方
+        function drawPianoAndFinger(angleDeg) {
+            ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+            // 1. 绘制白键
+            for(let i=0; i<whiteKeys.length; i++){
+                const key = whiteKeys[i];
+                ctx.fillStyle = "#FFF8F0";
+                ctx.shadowBlur = 0;
+                ctx.fillRect(key.x, 0, key.width-1, whiteKeyHeight);
+                ctx.strokeStyle = "#aaa";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(key.x, 0, key.width-1, whiteKeyHeight);
+                ctx.fillStyle = "#3a3a4a";
+                ctx.font = `bold ${Math.floor(whiteKeyWidth * 0.2)}px "Segoe UI"`;
+                ctx.fillText(key.name, key.x + key.width/2 - 8, whiteKeyHeight - 12);
+            }
+            // 绘制黑键
+            for(let bk of blackKeys){
+                ctx.fillStyle = "#2b2b38";
+                ctx.shadowBlur = 2;
+                ctx.fillRect(bk.x, 0, bk.width-2, blackKeyHeight);
+                ctx.fillStyle = "#ddd";
+                ctx.font = `${Math.floor(blackKeyWidth*0.22)}px "Segoe UI"`;
+                ctx.fillText(bk.name, bk.x + 4, blackKeyHeight-8);
+            }
+            ctx.shadowBlur = 0;
+            
+            // 高亮中央C（第一个白键）边缘增加教学示意
+            const cKey = whiteKeys[0];
+            ctx.save();
+            ctx.shadowBlur = 0;
+            ctx.strokeStyle = "#f5b642";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(cKey.x+2, 2, cKey.width-5, whiteKeyHeight-4);
+            ctx.fillStyle = "#f5b64290";
+            ctx.font = "bold 14px monospace";
+            ctx.fillText("⭐ 示范键 (C4)", cKey.x + 10, 25);
+            ctx.restore();
+            
+            // ****** 手指模型 (基于C4白键中心上方，角度旋转) ******
+            const fingerBaseX = cKey.x + cKey.width/2;
+            const fingerBaseY = 55;  // 起始点（腕点）
+            const fingerTipYoffset = 72; // 指尖延伸长度
+            
+            // 根据角度计算指尖坐标 (角度: 垂直向下为90°方向，小角度更水平)
+            // 角度定义: 0° 水平向左(触键很平), 90° 垂直向下。为了让视觉更直观，设定手指从腕点指向键面方向
+            // 实际手指关节: 腕点在键面上方，指尖点根据角度旋转，角度越大越垂直向下。
+            let rad = (angleDeg * Math.PI) / 180;
+            // 手指长度
+            const fingerLen = 62;
+            let tipX = fingerBaseX + Math.sin(rad) * fingerLen * 0.6;  // 水平偏移 (角度大时水平位移小)
+            let tipY = fingerBaseY + Math.cos(rad) * fingerLen;
+            // 约束指尖不能超出键范围(艺术调整)
+            tipY = Math.min(tipY, whiteKeyHeight - 8);
+            
+            // 画手臂/手指
+            ctx.beginPath();
+            ctx.moveTo(fingerBaseX, fingerBaseY);
+            ctx.lineTo(tipX, tipY);
+            ctx.lineWidth = 14;
+            ctx.strokeStyle = "#F7CFA1";
+            ctx.shadowBlur = 3;
+            ctx.stroke();
+            // 指尖圆点
+            ctx.beginPath();
+            ctx.arc(tipX, tipY, 12, 0, 2*Math.PI);
+            ctx.fillStyle = "#FFC285";
+            ctx.fill();
+            ctx.fillStyle = "#b95f1a";
+            ctx.beginPath();
+            ctx.arc(tipX-2, tipY-2, 3, 0, 2*Math.PI);
+            ctx.fill();
+            // 标注角度示意线
+            ctx.beginPath();
+            ctx.moveTo(fingerBaseX, fingerBaseY);
+            ctx.lineTo(fingerBaseX + 28, fingerBaseY);
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "#f0bc6e";
+            ctx.setLineDash([5,5]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            ctx.fillStyle = "#ffec9f";
+            ctx.font = "bold 14px 'Segoe UI'";
+            ctx.fillText(`${angleDeg}°`, fingerBaseX + 8, fingerBaseY - 8);
+            
+            // 附加音色小提示
+            ctx.font = "italic 12px 'Segoe UI'";
+            ctx.fillStyle = "#e0aa5e";
+            ctx.fillText("触键方向", fingerBaseX-25, fingerBaseY-12);
+        }
+        
+        // 键按下的视觉反馈 (闪光)
+        let flashTimeout = null;
+        function triggerKeyVisualFeedback() {
+            if(flashTimeout) clearTimeout(flashTimeout);
+            const overlay = document.createElement('div');
+            overlay.style.position = 'fixed';
+            overlay.style.top = '0'; overlay.style.left = '0'; overlay.style.width='100%'; overlay.style.height='100%';
+            overlay.style.pointerEvents = 'none';
+            overlay.style.backgroundColor = 'rgba(255,240,170,0.2)';
+            overlay.style.zIndex = '999';
+            overlay.style.transition = '0.15s';
+            document.body.appendChild(overlay);
+            setTimeout(()=>{ overlay.style.opacity='0'; setTimeout(()=>overlay.remove(),200); },100);
+            // 同时canvas微闪（重绘时保持美观，额外增加）
+            const origBg = canvas.style.boxShadow;
+            canvas.style.boxShadow = '0 0 0 2px #ffbe5e, 0 0 0 6px rgba(255,180,70,0.6)';
+            setTimeout(()=>{ canvas.style.boxShadow = origBg; }, 150);
+        }
+        
+        // 更新右侧谐波柱状图 (根据角度，高频谐波幅度增加)
+        function updateHarmonicBars(angleDeg){
+            const t = (angleDeg - 20) / 70; // 0..1
+            // 基频始终较高，2次谐波以上随角度增加而增加
+            const bars = document.querySelectorAll('.bar');
+            if(bars.length >=5){
+                // 基频: 稍微随角度略微提升，但基本饱满
+                let fundHeight = 70 + t * 20;
+                let harm2 = 45 + t * 55;
+                let harm3 = 28 + t * 68;
+                let harm4 = 15 + t * 70;
+                let harm5 = 8 + t * 65;
+                bars[0].style.height = Math.min(120, fundHeight) + 'px';
+                bars[1].style.height = Math.min(120, harm2) + 'px';
+                bars[2].style.height = Math.min(120, harm3) + 'px';
+                bars[3].style.height = Math.min(120, harm4) + 'px';
+                bars[4].style.height = Math.min(120, harm5) + 'px';
+                // 调整颜色明亮度
+                const brightColor = `linear-gradient(0deg, #ffaa44, ${t>0.6? '#ffefb0' : '#66ccff'})`;
+                for(let i=0;i<bars.length;i++){
+                    bars[i].style.background = brightColor;
+                }
+            }
+            // 更新文字描述
+            const descSpan = document.getElementById('timbreDesc');
+            if(angleDeg >= 70){
+                descSpan.innerHTML = '✨ 明亮 · 锋芒';
+                descSpan.style.color = '#ffc285';
+            } else if(angleDeg <= 45){
+                descSpan.innerHTML = '🍃 柔和 · 温暖';
+                descSpan.style.color = '#b8e2ff';
+            } else {
+                descSpan.innerHTML = '🎚️ 均衡 · 自然';
+                descSpan.style.color = '#f3d382';
+            }
+        }
+        
+        // 监听角度滑块
+        const slider = document.getElementById('angleSlider');
+        const angleSpan = document.getElementById('angleValueDisplay');
+        function setAngle(angle){
+            currentAngle = angle;
+            angleSpan.innerText = Math.round(angle) + "°";
+            drawPianoAndFinger(angle);
+            updateHarmonicBars(angle);
+        }
+        slider.addEventListener('input', (e)=>{
+            let val = parseInt(e.target.value);
+            setAngle(val);
+        });
+        
+        // 点击钢琴键播放 (检测键区域)
+        function getKeyFromClick(clientX, clientY){
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const canvasX = (clientX - rect.left) * scaleX;
+            const canvasY = (clientY - rect.top) * scaleY;
+            if(canvasX<0 || canvasX>canvasWidth || canvasY<0 || canvasY>canvasHeight) return null;
+            // 优先检测黑键 (黑键区域较小且在上方)
+            for(let bk of blackKeys){
+                if(canvasX >= bk.x && canvasX <= bk.x+bk.width && canvasY <= blackKeyHeight){
+                    return bk;
+                }
+            }
+            // 检测白键
+            for(let wk of whiteKeys){
+                if(canvasX >= wk.x && canvasX <= wk.x+wk.width && canvasY <= whiteKeyHeight){
+                    return wk;
+                }
+            }
+            return null;
+        }
+        
+        canvas.addEventListener('click', (e)=>{
+            const key = getKeyFromClick(e.clientX, e.clientY);
+            if(key){
+                let freq = key.freq;
+                // 播放前确保AudioContext启动
+                if(!audioCtx){
+                    initAudio();
+                }
+                playNoteWithAngle(freq, currentAngle);
+                // 同时增加按键波纹反馈
+                triggerKeyVisualFeedback();
+                // 额外小提示: 显示按下的音名
+                const tempDiv = document.createElement('div');
+                tempDiv.innerText = `🎹 ${key.name}  ${currentAngle}° 触键`;
+                tempDiv.style.position = 'fixed';
+                tempDiv.style.bottom = '30px';
+                tempDiv.style.left = '50%';
+                tempDiv.style.transform = 'translateX(-50%)';
+                tempDiv.style.backgroundColor = '#000000aa';
+                tempDiv.style.color = '#ffde9e';
+                tempDiv.style.padding = '6px 18px';
+                tempDiv.style.borderRadius = '40px';
+                tempDiv.style.fontWeight = 'bold';
+                tempDiv.style.zIndex = '1000';
+                tempDiv.style.backdropFilter = 'blur(8px)';
+                document.body.appendChild(tempDiv);
+                setTimeout(()=>tempDiv.remove(), 800);
+            }
+        });
+        
+        // 播放示范按钮: 直接播放C4音符
+        const demoBtn = document.getElementById('playDemoNote');
+        demoBtn.addEventListener('click', ()=>{
+            if(!audioCtx) initAudio();
+            playNoteWithAngle(261.63, currentAngle);
+            triggerKeyVisualFeedback();
+        });
+        
+        // 预激活音频上下文（首次任何用户交互时自动启用）: 增加一个温柔提示，点击任意地方激活音频
+        function warmupAudio(){
+            if(audioCtx && audioCtx.state === 'suspended'){
+                audioCtx.resume();
+            }else if(!audioCtx){
+                audioCtx = initAudio();
+                audioCtx.resume().catch(e=>{});
+            }
+        }
+        window.addEventListener('click', warmupAudio, { once: true });
+        // 初始化绘制
+        setAngle(70);
+        // 增加初始化音频环境但不发声，只是准备
+        window.addEventListener('touchstart', warmupAudio, { once: true });
+        
+        // 窗口resize保持canvas比例重绘 (由于canvas固定尺寸,但父级缩放无影响)
+        window.addEventListener('resize', ()=>{
+            drawPianoAndFinger(currentAngle);
+        });
+        // 确保鼠标移入不移出重绘
+        drawPianoAndFinger(currentAngle);
+        // 预置音色视觉
+        updateHarmonicBars(70);
+    })();
+</script>
+</body>
+</html>
